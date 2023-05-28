@@ -1,1 +1,0 @@
-# arc_k8s_image_benchmarking
