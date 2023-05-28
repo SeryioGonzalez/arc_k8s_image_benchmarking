@@ -53,9 +53,6 @@ function reset_arc_extensions {
     source AUX_reset_arc_extensions.sh
 }
 
-echo "Delete files in output folder"
-find $output_folder -type f -exec rm -f {} \;
-
 echo "Cluster baseline images"
 reset_arc_connection
 get_cluster_images $image_list_cluster_baseline
