@@ -1,0 +1,5 @@
+microsoft.azuredefender.kubernetes microsoft.azuredefender.kubernetes
+microsoft.azuremonitor.containers azuremonitor-containers
+microsoft.policyinsights azpolicy
+microsoft.azurekeyvaultsecretsprovider azkeyvault
+microsoft.openservicemesh openservmesh
