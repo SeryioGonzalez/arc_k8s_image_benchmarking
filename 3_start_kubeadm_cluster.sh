@@ -19,3 +19,6 @@ echo "Bring kubeconfig"
 scp -q -o StrictHostKeyChecking=no -P 22222 $vm_public_ip:/home/$vmUser/.kube/config $remote_cluster_kubeconfig
 
 sed -i "s/$vm_private_ip/$vm_public_ip/" $remote_cluster_kubeconfig
+
+echo "Cluster baseline ns"
+kubectl --kubeconfig=$remote_cluster_kubeconfig get ns -o jsonpath="{.items[*].metadata.name}" | tr -s '[[:space:]]' '\n' > $cluster_baseline_namespaces

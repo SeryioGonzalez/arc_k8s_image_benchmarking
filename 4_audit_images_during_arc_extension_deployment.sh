@@ -56,9 +56,6 @@ function reset_arc_extensions {
 echo "Delete files in output folder"
 find $output_folder -type f -exec rm -f {} \;
 
-echo "Cluster baseline ns"
-kubectl --kubeconfig=$remote_cluster_kubeconfig get ns -o jsonpath="{.items[*].metadata.name}" | tr -s '[[:space:]]' '\n' > $cluster_baseline_namespaces
-
 echo "Cluster baseline images"
 reset_arc_connection
 get_cluster_images $image_list_cluster_baseline
