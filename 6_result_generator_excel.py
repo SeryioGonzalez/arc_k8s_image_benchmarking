@@ -38,7 +38,7 @@ def get_image_data_dict_list_from_file(image_list_file):
 
 #This dictionary has the number of vulnerabilities per image
 image_scan_results = {}
-image_scan_files = [ os.path.join(config.image_scan_folder, image_scan_file) for image_scan_file in os.listdir(config.image_scan_folder)]
+image_scan_files = [ os.path.join(config.image_scan_folder, image_scan_file) for image_scan_file in os.listdir(config.image_scan_folder) if ".txt" in image_scan_file]
  
 # Load image scan results
 for image_scan_file in image_scan_files:

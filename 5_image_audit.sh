@@ -24,6 +24,7 @@ image_id=0
 for image in $(cat $all_image_list_file)
 do
     echo "Scaning $image"
-    ssh -p 22222 $vm_public_ip "trivy image -q $image" > $image_scan_folder$image_id"_image_scan.txt"
+    ssh -p 22222 $vm_public_ip "trivy image -q $image"         > $image_scan_folder$image_id"_image_scan.txt"
+    ssh -p 22222 $vm_public_ip "trivy image -q $image -f json" > $image_scan_folder$image_id"_image_scan.json"
     image_id=$((image_id+1))
 done
