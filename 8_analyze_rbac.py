@@ -9,18 +9,25 @@ import sys
 target_sa = "azure-arc-kube-aad-proxy-sa"
 scenario_descriptor = "1_arc_no_extensions"
 
-
-
-scenario_files = [ os.path.join(config.rbac_folder, rbac_file) for rbac_file in os.listdir(config.rbac_folder) if scenario_descriptor in rbac_file]
-rbac_crb_file  = [ scenario_file for scenario_file in scenario_files if "_clusterrolebindings.json" in scenario_file ][0]
-rbac_cr_file   = [ scenario_file for scenario_file in scenario_files if "_clusterroles.json"        in scenario_file ][0]
-rbac_rb_file   = [ scenario_file for scenario_file in scenario_files if "_rolebindings.json"        in scenario_file ][0]
-rbac_role_file = [ scenario_file for scenario_file in scenario_files if "_roles.json"               in scenario_file ][0]
-
 ##### CORE ####
 admin_verb_list = ['*']
 write_verb_list = ['approve', 'create', 'delete', 'deletecollection', 'escalate', 'impersonate', 'patch', 'proxy', 'sign', 'update']
 read_verb_list  = ['get', 'list', 'watch']
+
+def load_scenario_data(scenario_descriptor):
+    scenario_files = [ os.path.join(config.rbac_folder, rbac_file) for rbac_file in os.listdir(config.rbac_folder) if scenario_descriptor in rbac_file]
+
+    rbac_crb_file  = [ scenario_file for scenario_file in scenario_files if "_clusterrolebindings.json" in scenario_file ][0]
+    rbac_cr_file   = [ scenario_file for scenario_file in scenario_files if "_clusterroles.json"        in scenario_file ][0]
+    rbac_rb_file   = [ scenario_file for scenario_file in scenario_files if "_rolebindings.json"        in scenario_file ][0]
+    rbac_role_file = [ scenario_file for scenario_file in scenario_files if "_roles.json"               in scenario_file ][0]
+
+    rbac_crb_data  = filter_bindings_bound_to_sa(load_json_file(rbac_crb_file))
+    rbac_rb_data   = filter_bindings_bound_to_sa(load_json_file(rbac_rb_file))
+    rbac_cr_data   = load_json_file(rbac_cr_file)
+    rbac_role_data = load_json_file(rbac_role_file)
+
+    return rbac_crb_data, rbac_cr_data, rbac_rb_data, rbac_role_data 
 
 def classify_rule_verb_level (verb_list):
     admin_verbs_in_list = [verb for verb in verb_list if verb in admin_verb_list]
@@ -69,33 +76,30 @@ def print_details(rbac_roles_to_intended_sa_rule_list, role_type):
         read_level_resources  = ", ".join(sum([rbac_rule['resources'] for rbac_rule in rbac_role['rules'] if rbac_rule['verb_level'] == 'read_level'],  []) )
         print("{}; {}; {}; {}".format( rbac_role_name, read_level_resources, write_level_resources, admin_level_resources ) )
 
+def get_role_details_to_sa(service_account_name):
+    binding_data = rbac_rb_to_sa
+    rbac_role_names_bound_to_intended_sa = get_roles_names_bound_to_sa(service_account_name, binding_data)
+    rbac_role_to_intended_sa_rule_list   = get_role_details(rbac_role_names_bound_to_intended_sa, rbac_role_json_data)
 
-### CLUSTER ROLES ###
-#LOAD ALL CRs
-rbac_cr_json_data = load_json_file(rbac_cr_file)
-#LOAD ALL CRBs BOUND TO A SA
-rbac_crb_json_data = load_json_file(rbac_crb_file)
-rbac_crb_to_sa = filter_bindings_bound_to_sa(rbac_crb_json_data) 
+    return rbac_cr_to_intended_sa_rule_list
 
-### ROLES ###
-#LOAD ALL ROLES
-rbac_role_json_data = load_json_file(rbac_role_file)
-#ONLY RBs bound to SAs
-rbac_rb_json_data = load_json_file(rbac_rb_file)
-rbac_rb_to_sa = filter_bindings_bound_to_sa(rbac_rb_json_data) 
+def get_cr_details_to_sa(service_account_name):
+    binding_data = rbac_crb_to_sa
+    rbac_cr_names_bound_to_intended_sa   = get_roles_names_bound_to_sa(service_account_name, binding_data)
+    rbac_cr_to_intended_sa_rule_list     = get_role_details(rbac_cr_names_bound_to_intended_sa, rbac_cr_json_data)
+
+    return rbac_cr_to_intended_sa_rule_list
+
+#LOAD JSON DATA FOR SCENARIO
+rbac_crb_to_sa, rbac_cr_json_data, rbac_rb_to_sa, rbac_role_json_data = load_scenario_data(scenario_descriptor)
 
 ###  LOGIC ###
-#GET CR NAMES BOUND TO TARGET SA
-rbac_cr_names_bound_to_intended_sa = get_roles_names_bound_to_sa(target_sa, rbac_crb_to_sa)
 #GET THE CR DETAILS BOUND TO TARGET SA
-rbac_cr_to_intended_sa_rule_list = get_role_details(rbac_cr_names_bound_to_intended_sa, rbac_cr_json_data)
+rbac_cr_to_intended_sa_rule_list = get_cr_details_to_sa(target_sa)
+print_details(rbac_cr_to_intended_sa_rule_list, "CLUSTER ROLES")
+
 
 #GET ROLE NAMES BOUND TO TARGET SA
-rbac_role_names_bound_to_intended_sa = get_roles_names_bound_to_sa(target_sa, rbac_rb_to_sa)
-
-#GET THE RULE DETAILS BOUND TO TARGET SA
-rbac_roles_to_intended_sa_rule_list = get_role_details(rbac_role_names_bound_to_intended_sa, rbac_role_json_data)
-
-print_details(rbac_cr_to_intended_sa_rule_list, "CLUSTER ROLES")
+rbac_roles_to_intended_sa_rule_list = get_role_details_to_sa(target_sa)
 print_details(rbac_roles_to_intended_sa_rule_list, "ROLES")
 

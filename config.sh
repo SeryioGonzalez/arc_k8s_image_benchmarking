@@ -1,7 +1,7 @@
 #PUT VARIABLES ONLY FOR PYTHON INTERWORKING
 
 ## THINGS YOU MIGHT WANT TO CHANGE
-rg="seryiokubeRG"
+rg="sergiokubeRG"
 region="westeurope"
 vmUser="sergio"
 
