@@ -111,8 +111,8 @@ print ("")
 print (" -- PRINTING FOUND IMAGES --")
 print("ELEMENT; NAMESPACE; POD NAME; CONTAINER NAME; IMAGE FQDN; POD SERVICE ACCOUNT")
 for arc_baseline_image in arc_baseline_images:
-    rbac_data = analyze_rbac.print_sa_rbac_for_scenario(arc_baseline_image['pod_service_account'], "1_arc_no_extensions")
-    image_data = "AzArc K8S Agent;{};{};{};{};{}".format(arc_baseline_image['namespace'], arc_baseline_image['pod_name'], arc_baseline_image['container_name'], arc_baseline_image['image'], arc_baseline_image['pod_service_account'])
+    rbac_data = analyze_rbac.get_sa_rbac_for_scenario(arc_baseline_image['pod_service_account'], "1_arc_no_extensions")
+    image_data = "AzArc K8S Agent;{};{};{};{};{};{}".format(arc_baseline_image['namespace'], arc_baseline_image['pod_name'], arc_baseline_image['container_name'], arc_baseline_image['image'], arc_baseline_image['pod_service_account'], rbac_data)
     print(image_data)
 
 output_folder_extension_images_file_list = get_extension_image_files()
