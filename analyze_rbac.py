@@ -6,9 +6,6 @@ import os
 import re
 import sys
 
-target_sa = "azure-arc-kube-aad-proxy-sa"
-scenario_descriptor = "1_arc_no_extensions"
-
 ##### CORE ####
 admin_verb_list = ['*']
 write_verb_list = ['approve', 'create', 'delete', 'deletecollection', 'escalate', 'impersonate', 'patch', 'proxy', 'sign', 'update']
@@ -23,9 +20,9 @@ def load_scenario_data(scenario_descriptor):
     rbac_role_file = [ scenario_file for scenario_file in scenario_files if "_roles.json"               in scenario_file ][0]
 
     rbac_crb_data  = filter_bindings_bound_to_sa(load_json_file(rbac_crb_file))
+    rbac_cr_data   = load_json_file(rbac_cr_file)['items']
     rbac_rb_data   = filter_bindings_bound_to_sa(load_json_file(rbac_rb_file))
-    rbac_cr_data   = load_json_file(rbac_cr_file)
-    rbac_role_data = load_json_file(rbac_role_file)
+    rbac_role_data = load_json_file(rbac_role_file)['items']
 
     return rbac_crb_data, rbac_cr_data, rbac_rb_data, rbac_role_data 
 
@@ -58,16 +55,38 @@ def get_roles_names_bound_to_sa(sa_name, role_data):
     return role_names
 
 def get_role_details(role_names_of_interest, role_list):
-    role_rule_data_of_interest = [role for role in role_list['items'] if role['metadata']['name'] in role_names_of_interest ]
+    role_rule_data_of_interest = [role for role in role_list if role['metadata']['name'] in role_names_of_interest ]
     role_details = [{'name':role['metadata']['name'], 'rules':[ {'resources': rules['resources'], 'verb_level': classify_rule_verb_level(rules['verbs'])} for rules in role['rules']]} for role in role_rule_data_of_interest ]
 
     return role_details
 
-def print_details(rbac_roles_to_intended_sa_rule_list, role_type):
+def print_details(rbac_cr, rbac_role):
 
-    if len(rbac_roles_to_intended_sa_rule_list) > 0:
-        print("{} NAME; READ_RESOURCES; WRITE_RESOURCES; ADMIN_LEVEL".format(role_type))
+    if len(rbac_cr) > 1:
+        print ("MORE THAN ONE CR")
+        sys.exit(1)
 
+    if len(rbac_role) > 1:
+        print ("MORE THAN ONE ROLE")
+        sys.exit(1)
+
+    rbac_role = rbac_role[0]
+    rbac_role_name = rbac_role['name']
+
+    rbac_role_admin_level_resources = ", ".join(sum([rbac_rule['resources'] for rbac_rule in rbac_role['rules'] if rbac_rule['verb_level'] == 'admin_level'], []) )
+    rbac_role_write_level_resources = ", ".join(sum([rbac_rule['resources'] for rbac_rule in rbac_role['rules'] if rbac_rule['verb_level'] == 'write_level'], []) )
+    rbac_role_read_level_resources  = ", ".join(sum([rbac_rule['resources'] for rbac_rule in rbac_role['rules'] if rbac_rule['verb_level'] == 'read_level'],  []) )
+
+    rbac_cr = rbac_cr[0]
+    rbac_cr_name = rbac_cr['name']
+
+    rbac_cr_admin_level_resources = ", ".join(sum([rbac_rule['resources']  for rbac_rule in rbac_cr['rules'] if rbac_rule['verb_level'] == 'admin_level'], []) )
+    rbac_cr_write_level_resources = ", ".join(sum([rbac_rule['resources']  for rbac_rule in rbac_cr['rules'] if rbac_rule['verb_level'] == 'write_level'], []) )
+    rbac_cr_read_level_resources  = ", ".join(sum([rbac_rule['resources'] for rbac_rule  in rbac_cr['rules'] if rbac_rule['verb_level'] == 'read_level' ], []) )
+
+    print("{}; {}; {}; {}; {}; {}; {}; {}".format( rbac_role_name, rbac_role_read_level_resources, rbac_role_write_level_resources, rbac_role_admin_level_resources, rbac_cr_name, rbac_cr_read_level_resources, rbac_cr_write_level_resources, rbac_cr_admin_level_resources ) )
+
+'''
     for rbac_role in rbac_roles_to_intended_sa_rule_list:
         rbac_role_name = rbac_role['name']
 
@@ -75,31 +94,34 @@ def print_details(rbac_roles_to_intended_sa_rule_list, role_type):
         write_level_resources = ", ".join(sum([rbac_rule['resources'] for rbac_rule in rbac_role['rules'] if rbac_rule['verb_level'] == 'write_level'], []) )
         read_level_resources  = ", ".join(sum([rbac_rule['resources'] for rbac_rule in rbac_role['rules'] if rbac_rule['verb_level'] == 'read_level'],  []) )
         print("{}; {}; {}; {}".format( rbac_role_name, read_level_resources, write_level_resources, admin_level_resources ) )
+'''
 
-def get_role_details_to_sa(service_account_name):
-    binding_data = rbac_rb_to_sa
+    
+
+
+def get_role_or_cluster_role_details_to_sa(service_account_name, binding_data, rbac_role_json_data):
     rbac_role_names_bound_to_intended_sa = get_roles_names_bound_to_sa(service_account_name, binding_data)
     rbac_role_to_intended_sa_rule_list   = get_role_details(rbac_role_names_bound_to_intended_sa, rbac_role_json_data)
 
-    return rbac_cr_to_intended_sa_rule_list
+    return rbac_role_to_intended_sa_rule_list
 
-def get_cr_details_to_sa(service_account_name):
-    binding_data = rbac_crb_to_sa
-    rbac_cr_names_bound_to_intended_sa   = get_roles_names_bound_to_sa(service_account_name, binding_data)
-    rbac_cr_to_intended_sa_rule_list     = get_role_details(rbac_cr_names_bound_to_intended_sa, rbac_cr_json_data)
+def print_sa_rbac_for_scenario(target_sa, scenario_descriptor):
+    #LOAD JSON DATA FOR SCENARIO
+    rbac_crb_to_sa, rbac_cr_json_data, rbac_rb_to_sa, rbac_role_json_data = load_scenario_data(scenario_descriptor)
 
-    return rbac_cr_to_intended_sa_rule_list
+    ###  LOGIC ###
+    #GET THE CR DETAILS BOUND TO TARGET SA
+    rbac_cr_to_intended_sa_rule_list    = get_role_or_cluster_role_details_to_sa(target_sa, rbac_crb_to_sa, rbac_cr_json_data)
+    #GET ROLE NAMES BOUND TO TARGET SA
+    rbac_roles_to_intended_sa_rule_list = get_role_or_cluster_role_details_to_sa(target_sa, rbac_rb_to_sa, rbac_role_json_data)
+    print_details(rbac_cr_to_intended_sa_rule_list, rbac_roles_to_intended_sa_rule_list)
 
-#LOAD JSON DATA FOR SCENARIO
-rbac_crb_to_sa, rbac_cr_json_data, rbac_rb_to_sa, rbac_role_json_data = load_scenario_data(scenario_descriptor)
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("PROVIDE SERVICE_ACCOUNT_NAME AND SCENARIO")
+        sys.exit(1)
 
-###  LOGIC ###
-#GET THE CR DETAILS BOUND TO TARGET SA
-rbac_cr_to_intended_sa_rule_list = get_cr_details_to_sa(target_sa)
-print_details(rbac_cr_to_intended_sa_rule_list, "CLUSTER ROLES")
+    target_sa           = sys.argv[1]
+    scenario_descriptor = sys.argv[2]
 
-
-#GET ROLE NAMES BOUND TO TARGET SA
-rbac_roles_to_intended_sa_rule_list = get_role_details_to_sa(target_sa)
-print_details(rbac_roles_to_intended_sa_rule_list, "ROLES")
-
+    print_sa_rbac_for_scenario(target_sa, scenario_descriptor)

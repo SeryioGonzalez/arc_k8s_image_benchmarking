@@ -4,6 +4,7 @@ import config
 import json
 import os
 import re
+import analyze_rbac
 
 def process_result_line(result_line):
     processed_result_line = re.sub('[:()a-zA-Z,]', '', result_line.strip()).lstrip()
@@ -103,14 +104,15 @@ def get_extension_images(extension_images_file, arc_baseline_images):
 #Get base Arc images
 arc_baseline_images = get_image_data_dict_list_from_file(config.image_list_cluster_arc_no_extensions)
 
-print_image_scan_result()
+#print_image_scan_result()
 
 #PRINT ARC BASE IMAGES
 print ("")
 print (" -- PRINTING FOUND IMAGES --")
-print("ELEMENT, NAMESPACE, POD NAME, CONTAINER NAME, IMAGE FQDN, POD SERVICE ACCOUNT")
+print("ELEMENT; NAMESPACE; POD NAME; CONTAINER NAME; IMAGE FQDN; POD SERVICE ACCOUNT")
 for arc_baseline_image in arc_baseline_images:
-    image_data = "AzArc K8S Agent,{},{},{},{},{}".format(arc_baseline_image['namespace'], arc_baseline_image['pod_name'], arc_baseline_image['container_name'], arc_baseline_image['image'], arc_baseline_image['pod_service_account'])
+    rbac_data = analyze_rbac.print_sa_rbac_for_scenario(arc_baseline_image['pod_service_account'], "1_arc_no_extensions")
+    image_data = "AzArc K8S Agent;{};{};{};{};{}".format(arc_baseline_image['namespace'], arc_baseline_image['pod_name'], arc_baseline_image['container_name'], arc_baseline_image['image'], arc_baseline_image['pod_service_account'])
     print(image_data)
 
 output_folder_extension_images_file_list = get_extension_image_files()
