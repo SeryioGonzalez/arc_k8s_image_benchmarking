@@ -93,7 +93,6 @@ for arc_baseline_image in arc_baseline_images:
     image_data = "AzArc K8S Agent,{},{},{},{},{}".format(arc_baseline_image['namespace'], arc_baseline_image['pod_name'], arc_baseline_image['container_name'], arc_baseline_image['image'], arc_baseline_image['pod_service_account'])
     print(image_data)
 
-
 #Get extension image files
 #Get all output files with image list suffix
 output_folder_images_file_list = [ config.output_folder + output_file for output_file in os.listdir(config.output_folder) if config.pod_image_file_name_suffix in output_file ]

@@ -36,10 +36,10 @@ function get_cluster_images {
 
 function export_RBAC {
     scenario=$1
-    kubectl --kubeconfig=$remote_cluster_kubeconfig get rolebindings -o json        > $rbac_folder$scenario"_rolebindings.txt"
-    kubectl --kubeconfig=$remote_cluster_kubeconfig get clusterrolebindings -o json > $rbac_folder$scenario"_clusterrolebindings.txt"
-    kubectl --kubeconfig=$remote_cluster_kubeconfig get roles -o json               > $rbac_folder$scenario"_roles.txt"
-    kubectl --kubeconfig=$remote_cluster_kubeconfig get clusterroles -o json        > $rbac_folder$scenario"_clusterroles.txt"
+    kubectl --kubeconfig=$remote_cluster_kubeconfig get rolebindings     -A -o json > $rbac_folder$scenario"_rolebindings.json"
+    kubectl --kubeconfig=$remote_cluster_kubeconfig get roles            -A -o json > $rbac_folder$scenario"_roles.json"
+    kubectl --kubeconfig=$remote_cluster_kubeconfig get clusterroles        -o json > $rbac_folder$scenario"_clusterroles.json"
+    kubectl --kubeconfig=$remote_cluster_kubeconfig get clusterrolebindings -o json > $rbac_folder$scenario"_clusterrolebindings.json"
 
 }
 
@@ -104,7 +104,7 @@ do
     echo "Extension type $extension_type passed creating. Collecting provisioned images"
     extension_images_file=$output_folder$extension_name".pod_images.txt"
     get_cluster_images $extension_images_file
-    export_RBAC $extension_name
+    export_RBAC "arc_extension_"$extension_name
 
 done < $arc_extension_list_file
 
