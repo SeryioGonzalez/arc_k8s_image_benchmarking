@@ -34,6 +34,16 @@ function get_cluster_images {
     rm $temp_file
 }
 
+function export_RBAC {
+    scenario=$1
+    kubectl --kubeconfig=$remote_cluster_kubeconfig get rolebindings -o json        > $rbac_folder$scenario"_rolebindings.txt"
+    kubectl --kubeconfig=$remote_cluster_kubeconfig get clusterrolebindings -o json > $rbac_folder$scenario"_clusterrolebindings.txt"
+    kubectl --kubeconfig=$remote_cluster_kubeconfig get roles -o json               > $rbac_folder$scenario"_roles.txt"
+    kubectl --kubeconfig=$remote_cluster_kubeconfig get clusterroles -o json        > $rbac_folder$scenario"_clusterroles.txt"
+
+}
+
+
 function reset_cluster_and_arc {
     source 88_reset_kubeadm_and_arc.sh
     source 3_start_kubeadm_cluster.sh
@@ -56,10 +66,12 @@ function reset_arc_extensions {
 echo "Cluster baseline images"
 reset_arc_connection
 get_cluster_images $image_list_cluster_baseline
+export_RBAC "0_cluster_baseline"
 
 echo "Cluster images once connected to arc but before arc extension provision"
 source AUX_connect_cluster_to_arc.sh
 get_cluster_images $image_list_cluster_arc_no_extensions
+export_RBAC "1_arc_no_extensions"
 
 echo "We start installing Arc extensions"
 while read arc_extension_data
@@ -92,6 +104,7 @@ do
     echo "Extension type $extension_type passed creating. Collecting provisioned images"
     extension_images_file=$output_folder$extension_name".pod_images.txt"
     get_cluster_images $extension_images_file
+    export_RBAC $extension_name
 
 done < $arc_extension_list_file
 

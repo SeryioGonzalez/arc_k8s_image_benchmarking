@@ -1,7 +1,7 @@
 #PUT VARIABLES ONLY FOR PYTHON INTERWORKING
 
 ## THINGS YOU MIGHT WANT TO CHANGE
-rg="seryiokubeRG"
+rg="sergiokubeRG"
 region="westeurope"
 vmUser="sergio"
 
@@ -29,6 +29,7 @@ trivy_install_script="INSTALL_trivy_scanner.sh"
 #FOLDERS
 output_folder="output/"
 image_scan_folder="output/image_scans/"
+rbac_folder="output/rbac/"
 
 #FILES
 #MIND FOLDERS ARE DUPLICATED FOR PYTHON AND BASH COMPATIBILITY
@@ -38,3 +39,5 @@ image_list_cluster_baseline="output/0_cluster_baseline.pod_images.txt"
 image_list_cluster_arc_no_extensions="output/1_arc_no_extension.pod_images.txt"
 all_image_list_file="output/all_images.txt"
 trivy_results_file="output/trivy_image_scan.txt"
+
+
