@@ -104,14 +104,16 @@ def get_extension_images(extension_images_file, arc_baseline_images):
 #Get base Arc images
 arc_baseline_images = get_image_data_dict_list_from_file(config.image_list_cluster_arc_no_extensions)
 
-#print_image_scan_result()
+print_image_scan_result()
 
 #PRINT ARC BASE IMAGES
 print ("")
 print (" -- PRINTING FOUND IMAGES --")
-print("ELEMENT; NAMESPACE; POD NAME; CONTAINER NAME; IMAGE FQDN; POD SERVICE ACCOUNT")
+print("ELEMENT; NAMESPACE; POD NAME; CONTAINER NAME; IMAGE FQDN; POD SERVICE ACCOUNT; ASSIGNED ROLES; READ - NS RESOURCES; WRITE - NS RESOURCES; ADMIN - NS RESOURCES; ASSIGNED CLUSTER ROLES; READ - CLUSTER RESOURCES; WRITE - CLUSTER RESOURCES; ADMIN - CLUSTER RESOURCES")
 for arc_baseline_image in arc_baseline_images:
-    rbac_data = analyze_rbac.get_sa_rbac_for_scenario(arc_baseline_image['pod_service_account'], "1_arc_no_extensions")
+    rbac_scenario = "1_arc_no_extensions"
+    rbac_data = analyze_rbac.get_sa_rbac_for_scenario(arc_baseline_image['pod_service_account'], rbac_scenario)
+    
     image_data = "AzArc K8S Agent;{};{};{};{};{};{}".format(arc_baseline_image['namespace'], arc_baseline_image['pod_name'], arc_baseline_image['container_name'], arc_baseline_image['image'], arc_baseline_image['pod_service_account'], rbac_data)
     print(image_data)
 
@@ -125,5 +127,7 @@ for extension_images_file in output_folder_extension_images_file_list:
     extension_name = extension_images_file.replace(config.output_folder, "").replace(config.pod_image_file_name_suffix, "")
 
     for extension_image in extension_images:
-        image_data = "{} Arc extension,{},{},{},{},{}".format(extension_name, extension_image['namespace'], extension_image['pod_name'], extension_image['container_name'], extension_image['image'], extension_image['pod_service_account'])
+        rbac_scenario = "arc_extension_" + extension_name    
+        rbac_data = analyze_rbac.get_sa_rbac_for_scenario(extension_image['pod_service_account'], rbac_scenario)
+        image_data = "Arc extension - {} ;{};{};{};{};{}; {}".format(extension_name, extension_image['namespace'], extension_image['pod_name'], extension_image['container_name'], extension_image['image'], extension_image['pod_service_account'], rbac_data)
         print(image_data)

@@ -64,7 +64,6 @@ def get_role_details(role_names_of_interest, role_list):
         return ""
 
 def get_details(rbac_cr, rbac_role):
-
     if len(rbac_cr) > 1:
         print ("MORE THAN ONE CR")
         sys.exit(1)
@@ -86,27 +85,29 @@ def get_details(rbac_cr, rbac_role):
         rbac_role_write_level_resources = " "
         rbac_role_read_level_resources  = " "
 
-    rbac_cr = rbac_cr[0]
-    rbac_cr_name = rbac_cr['name']
+    if len(rbac_cr) > 0:
+        rbac_cr = rbac_cr[0]
+        rbac_cr_name = rbac_cr['name']
+        
+        rbac_cr_admin_level_resources = ", ".join(sum([rbac_rule['resources']  for rbac_rule in rbac_cr['rules'] if rbac_rule['verb_level'] == 'admin_level'], []) )
+        rbac_cr_write_level_resources = ", ".join(sum([rbac_rule['resources']  for rbac_rule in rbac_cr['rules'] if rbac_rule['verb_level'] == 'write_level'], []) )
+        rbac_cr_read_level_resources  = ", ".join(sum([rbac_rule['resources']  for rbac_rule in rbac_cr['rules'] if rbac_rule['verb_level'] == 'read_level' ], []) )
 
-    rbac_cr_admin_level_resources = ", ".join(sum([rbac_rule['resources']  for rbac_rule in rbac_cr['rules'] if rbac_rule['verb_level'] == 'admin_level'], []) )
-    rbac_cr_write_level_resources = ", ".join(sum([rbac_rule['resources']  for rbac_rule in rbac_cr['rules'] if rbac_rule['verb_level'] == 'write_level'], []) )
-    rbac_cr_read_level_resources  = ", ".join(sum([rbac_rule['resources'] for rbac_rule  in rbac_cr['rules'] if rbac_rule['verb_level'] == 'read_level' ], []) )
+        if rbac_cr_write_level_resources == "":
+            rbac_cr_write_level_resources = " " 
 
-    return "{}; {}; {}; {}; {}; {}; {}; {}".format( rbac_role_name, rbac_role_read_level_resources, rbac_role_write_level_resources, rbac_role_admin_level_resources, rbac_cr_name, rbac_cr_read_level_resources, rbac_cr_write_level_resources, rbac_cr_admin_level_resources ) 
+        if rbac_cr_read_level_resources == "":
+            rbac_cr_read_level_resources = " " 
 
-'''
-    for rbac_role in rbac_roles_to_intended_sa_rule_list:
-        rbac_role_name = rbac_role['name']
+    else:
+        rbac_cr_name = " "
+        rbac_cr_admin_level_resources = " "
+        rbac_cr_write_level_resources = " "
+        rbac_cr_read_level_resources  = " "
 
-        admin_level_resources = ", ".join(sum([rbac_rule['resources'] for rbac_rule in rbac_role['rules'] if rbac_rule['verb_level'] == 'admin_level'], []) )
-        write_level_resources = ", ".join(sum([rbac_rule['resources'] for rbac_rule in rbac_role['rules'] if rbac_rule['verb_level'] == 'write_level'], []) )
-        read_level_resources  = ", ".join(sum([rbac_rule['resources'] for rbac_rule in rbac_role['rules'] if rbac_rule['verb_level'] == 'read_level'],  []) )
-        print("{}; {}; {}; {}".format( rbac_role_name, read_level_resources, write_level_resources, admin_level_resources ) )
-'''
+    rbac_string = "{}; {}; {}; {}; {}; {}; {}; {}".format( rbac_role_name, rbac_role_read_level_resources, rbac_role_write_level_resources, rbac_role_admin_level_resources, rbac_cr_name, rbac_cr_read_level_resources, rbac_cr_write_level_resources, rbac_cr_admin_level_resources ) 
 
-    
-
+    return rbac_string
 
 def get_role_or_cluster_role_details_to_sa(service_account_name, binding_data, rbac_role_json_data):
     rbac_role_names_bound_to_intended_sa = get_roles_names_bound_to_sa(service_account_name, binding_data)
@@ -121,9 +122,13 @@ def get_sa_rbac_for_scenario(target_sa, scenario_descriptor):
     ###  LOGIC ###
     #GET THE CR DETAILS BOUND TO TARGET SA
     rbac_cr_to_intended_sa_rule_list    = get_role_or_cluster_role_details_to_sa(target_sa, rbac_crb_to_sa, rbac_cr_json_data)
+    
     #GET ROLE NAMES BOUND TO TARGET SA
     rbac_roles_to_intended_sa_rule_list = get_role_or_cluster_role_details_to_sa(target_sa, rbac_rb_to_sa, rbac_role_json_data)
-    get_details(rbac_cr_to_intended_sa_rule_list, rbac_roles_to_intended_sa_rule_list)
+    
+    rbac_data = get_details(rbac_cr_to_intended_sa_rule_list, rbac_roles_to_intended_sa_rule_list)
+    
+    return rbac_data
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
