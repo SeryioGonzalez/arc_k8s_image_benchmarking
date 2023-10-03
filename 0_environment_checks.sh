@@ -8,7 +8,7 @@ subscription_id=$AZURE_SUBSCRIPTION_ID_POC
 # Public key file is provided
 if [ -z $PUBLIC_KEY_FILE ]
 then
-    echo 'ERROR: You need an environment variable named PUBLIC_KEY_FILSE'
+    echo 'ERROR: You need an environment variable named PUBLIC_KEY_FILE'
     echo "Export it before using this script or add it to your bashrc file"
     exit
 fi
